@@ -32,7 +32,7 @@ jobs:
       - name: Download musl toolchain with GCC 13+ for ARMv7
         run: |
           mkdir -p /opt/musl-cross
-          wget https://musl.cc/armv7l-linux-musleabihf-cross.tgz
+          wget --inet4-only https://musl.cc/armv7l-linux-musleabihf-cross.tgz
           tar -xzf armv7l-linux-musleabihf-cross.tgz -C /opt/musl-cross --strip-components=1
 
       - name: Configure Cuberite for ARMv7 musl static build
