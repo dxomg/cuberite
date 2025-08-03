@@ -9,8 +9,10 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout Cuberite
+      - name: Checkout Cuberite with submodules
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install dependencies
         run: |
