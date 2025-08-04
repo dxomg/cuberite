@@ -83,12 +83,15 @@ namespace DataComponents
 	typedef std::variant<MaxStackSizeComponent, UnbreakableComponent, CustomNameComponent, DamageComponent, MaxDamageComponent, RepairCostComponent> DataComponent;
 
 	//  Original version taken from here: https://gist.github.com/nnaumenko/1db96f7e187979a057ee7ad757dee4f2
+	template <typename>
+	struct always_false : std::false_type {};
+
 	template <typename T, size_t I = 0>
 	static constexpr size_t GetIndexOfDataComponent()
 	{
 		if constexpr (I >= std::variant_size_v<DataComponent>)
 		{
-			static_assert(false, "Given type is not part of the DataComponent variant");
+			static_assert(always_false<T>::value, "Given type is not part of the DataComponent variant");
 			return 0;
 		}
 		else
