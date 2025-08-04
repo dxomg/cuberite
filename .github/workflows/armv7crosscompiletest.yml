@@ -1,11 +1,11 @@
-name: Cross-Compile Cuberite for ARMv7 (musl, static with GCC 13.2.0)
+name: Cross-Compile Cuberite for ARMv7 (glibc, GCC 13.2.0)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-armv7-musl:
-    name: ARMv7 (musl, GCC 13.2.0) Static Build
+  build-armv7-glibc:
+    name: ARMv7 glibc Build (GCC 13.2.0)
     runs-on: ubuntu-22.04
 
     steps:
@@ -25,35 +25,21 @@ jobs:
             curl \
             wget \
             file \
-            zip \
             python3 \
-            gawk \
-            bison \
-            flex \
-            texinfo \
-            help2man \
-            libtool \
-            automake \
-            autoconf \
+            unzip \
             upx
 
-      - name: Clone and build musl-cross-make with GCC 13.2.0
+      - name: Download ARMv7 glibc cross toolchain (GCC 13.2.0)
         run: |
-          git clone https://github.com/richfelker/musl-cross-make
-          cd musl-cross-make
+          wget https://releases.linaro.org/components/toolchain/binaries/13.2-2023.09/arm-linux-gnueabihf/gcc-linaro-13.2.0-2023.09-x86_64_arm-linux-gnueabihf.tar.xz
+          tar -xf gcc-linaro-13.2.0-2023.09-x86_64_arm-linux-gnueabihf.tar.xz
+          sudo mv gcc-linaro-13.2.0-2023.09-x86_64_arm-linux-gnueabihf /opt/arm-toolchain
 
-          echo "TARGET = armv7-linux-musleabihf" >> config.mak
-          echo "OUTPUT = /opt/musl-cross" >> config.mak
-          echo "GCC_VERSION = 13.2.0" >> config.mak
-
-          make -j$(nproc)
-          sudo make install
-
-      - name: Configure Cuberite for ARMv7 musl static build
+      - name: Configure Cuberite build for ARMv7 glibc
         run: |
-          export PATH="/opt/musl-cross/bin:$PATH"
-          export CC=armv7-linux-musleabihf-gcc
-          export CXX=armv7-linux-musleabihf-g++
+          export PATH="/opt/arm-toolchain/bin:$PATH"
+          export CC=arm-linux-gnueabihf-gcc
+          export CXX=arm-linux-gnueabihf-g++
 
           mkdir build
           cd build
@@ -63,36 +49,28 @@ jobs:
             -DCMAKE_SYSTEM_PROCESSOR=armv7 \
             -DCMAKE_C_COMPILER=${CC} \
             -DCMAKE_CXX_COMPILER=${CXX} \
-            -DCMAKE_FIND_ROOT_PATH=/opt/musl-cross/armv7-linux-musleabihf \
-            -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
-            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_STANDARD=23 \
-            -DCMAKE_EXE_LINKER_FLAGS="-static" \
-            -DCMAKE_CXX_FLAGS="--static -static-libstdc++ -static-libgcc" \
-            -DCMAKE_C_FLAGS="--static -static-libgcc"
+            -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
+            -DCMAKE_CXX_FLAGS="-O2 -march=armv7-a -mfpu=neon -mfloat-abi=hard" \
+            -DCMAKE_C_FLAGS="-O2 -march=armv7-a -mfpu=neon -mfloat-abi=hard"
 
-      - name: Build Cuberite for ARMv7
+      - name: Build Cuberite
         run: |
-          export PATH="/opt/musl-cross/bin:$PATH"
+          export PATH="/opt/arm-toolchain/bin:$PATH"
           cmake --build build --config Release -j$(nproc)
 
-      - name: List built contents
-        run: |
-          ls -lh build/Server || echo "No contents found in build/Server"
-
-      - name: Strip and compress the Cuberite binary
+      - name: Strip and compress the binary
         run: |
           BIN="build/Server/Cuberite"
           if [ -f "$BIN" ]; then
             file "$BIN"
-            strip "$BIN" || echo "Skipping strip for $BIN"
-            upx --best --lzma "$BIN" || echo "UPX compression skipped for $BIN"
+            strip "$BIN" || echo "Strip failed"
+            upx --best --lzma "$BIN" || echo "UPX compression skipped"
           fi
 
-      - name: Upload full Cuberite Server folder
+      - name: Upload Cuberite binary
         uses: actions/upload-artifact@v4
         with:
-          name: cuberite-armv7-musl-static-server
+          name: cuberite-armv7-glibc
           path: build/Server/
