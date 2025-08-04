@@ -37,7 +37,14 @@ jobs:
             autoconf \
             gcc-arm-linux-gnueabihf \
             g++-arm-linux-gnueabihf \
-            upx
+            upx \
+            lua5.3
+
+      - name: Symlink lua5.3 to lua if needed
+        run: |
+          if ! command -v lua >/dev/null && command -v lua5.3 >/dev/null; then
+            sudo ln -s "$(command -v lua5.3)" /usr/local/bin/lua
+          fi
 
       - name: Configure Cuberite for ARMv7 (glibc, hard-float) static build
         run: |
