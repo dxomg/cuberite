@@ -1,10 +1,11 @@
-name: Cross-Compile Cuberite for Termux (Android armv7)
+name: Cross-Compile Cuberite for ARMv7 (musl, static with GCC 13.2.0)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-android-armv7:
+  build-armv7-musl:
+    name: ARMv7 (musl, GCC 13.2.0) Static Build
     runs-on: ubuntu-22.04
 
     steps:
@@ -13,62 +14,85 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Download and setup Android NDK
+      - name: Install dependencies
         run: |
-          wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          unzip android-ndk-r25b-linux.zip
-          echo "ANDROID_NDK_ROOT=$PWD/android-ndk-r25b" >> $GITHUB_ENV
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            git \
+            curl \
+            wget \
+            file \
+            zip \
+            python3 \
+            gawk \
+            bison \
+            flex \
+            texinfo \
+            help2man \
+            libtool \
+            automake \
+            autoconf \
+            upx
 
-      - name: Add NDK toolchain to PATH
-        run: echo "$PWD/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
-
-      - name: Configure Cuberite for Android ARMv7 (Termux)
+      - name: Clone and build musl-cross-make with GCC 13.2.0
         run: |
-          export ANDROID_NDK_ROOT=$PWD/android-ndk-r25b
-          export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
-          export TARGET_HOST=armv7a-linux-androideabi
-          export API=24
+          git clone https://github.com/richfelker/musl-cross-make
+          cd musl-cross-make
 
-          export CC=$TOOLCHAIN/bin/${TARGET_HOST}${API}-clang
-          export CXX=$TOOLCHAIN/bin/${TARGET_HOST}${API}-clang++
+          echo "TARGET = armv7-linux-musleabihf" >> config.mak
+          echo "OUTPUT = /opt/musl-cross" >> config.mak
+          echo "GCC_VERSION = 13.2.0" >> config.mak
 
-          mkdir -p build
+          make -j$(nproc)
+          sudo make install
+
+      - name: Configure Cuberite for ARMv7 musl static build
+        run: |
+          export PATH="/opt/musl-cross/bin:$PATH"
+          export CC=armv7-linux-musleabihf-gcc
+          export CXX=armv7-linux-musleabihf-g++
+
+          mkdir build
           cd build
 
           cmake .. -G Ninja \
-            -DCMAKE_SYSTEM_NAME=Android \
-            -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a \
-            -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT \
-            -DCMAKE_ANDROID_STL_TYPE=c++_shared \
-            -DCMAKE_SYSTEM_VERSION=$API \
-            -DCMAKE_C_COMPILER=$CC \
-            -DCMAKE_CXX_COMPILER=$CXX \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=armv7 \
+            -DCMAKE_C_COMPILER=${CC} \
+            -DCMAKE_CXX_COMPILER=${CXX} \
+            -DCMAKE_FIND_ROOT_PATH=/opt/musl-cross/armv7-linux-musleabihf \
             -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
             -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
-            -DANDROID_USE_LEGACY_TOOLCHAIN_FILE=NO \
-            -DANDROID_TOOLCHAIN=clang \
-            -DANDROID_PLATFORM=android-24 \
-            -DThreads_FOUND=TRUE \
-            -DTHREADS_PTHREAD_ARG=ON \
-            -DTHREADS_HAVE_PTHREAD_ARG=1
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=23 \
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_CXX_FLAGS="--static -static-libstdc++ -static-libgcc" \
+            -DCMAKE_C_FLAGS="--static -static-libgcc"
 
-      - name: Build Cuberite for Android ARMv7
+      - name: Build Cuberite for ARMv7
         run: |
+          export PATH="/opt/musl-cross/bin:$PATH"
           cmake --build build --config Release -j$(nproc)
 
-      - name: Strip and compress Cuberite binary
+      - name: List built contents
+        run: |
+          ls -lh build/Server || echo "No contents found in build/Server"
+
+      - name: Strip and compress the Cuberite binary
         run: |
           BIN="build/Server/Cuberite"
           if [ -f "$BIN" ]; then
             file "$BIN"
-            $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-strip "$BIN" || echo "Strip failed"
-            upx --best --lzma "$BIN" || echo "UPX compression failed"
+            strip "$BIN" || echo "Skipping strip for $BIN"
+            upx --best --lzma "$BIN" || echo "UPX compression skipped for $BIN"
           fi
 
-      - name: Upload full Cuberite Server directory
+      - name: Upload full Cuberite Server folder
         uses: actions/upload-artifact@v4
         with:
-          name: cuberite-android-armv7
+          name: cuberite-armv7-musl-static-server
           path: build/Server/
