@@ -1,11 +1,11 @@
-name: Cross-Compile Cuberite for ARMv7 (GCC, glibc)
+name: Cross-Compile Cuberite for ARMv7 (GCC, glibc, hard-float)
 
 on:
   workflow_dispatch:
 
 jobs:
   build-armv7-gcc:
-    name: ARMv7 (glibc) Static Build
+    name: ARMv7 (glibc, hard-float) Static Build
     runs-on: ubuntu-22.04
 
     steps:
@@ -39,7 +39,7 @@ jobs:
             g++-arm-linux-gnueabihf \
             upx
 
-      - name: Configure Cuberite for ARMv7 (glibc) static build
+      - name: Configure Cuberite for ARMv7 (glibc, hard-float) static build
         run: |
           export CC=arm-linux-gnueabihf-gcc
           export CXX=arm-linux-gnueabihf-g++
@@ -58,8 +58,8 @@ jobs:
             -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
-            -DCMAKE_C_FLAGS="--static -static-libgcc -march=armv7-a -mfloat-abi=softfp" \
-            -DCMAKE_CXX_FLAGS="--static -static-libgcc -static-libstdc++ -march=armv7-a -mfloat-abi=softfp"
+            -DCMAKE_C_FLAGS="--static -static-libgcc -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard" \
+            -DCMAKE_CXX_FLAGS="--static -static-libgcc -static-libstdc++ -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard"
 
       - name: Build Cuberite for ARMv7
         run: |
