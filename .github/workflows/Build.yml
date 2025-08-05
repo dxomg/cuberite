@@ -145,7 +145,7 @@ jobs:
           body: Automatically uploaded release by GitHub actions
           fail_on_unmatched_files: true
           files: |
-                  ${{ github.workspace }}/cuberite/Cuberite-ubuntu-latest-clang-Release.zip
-                  ${{ github.workspace }}/cuberite/Cuberite-ubuntu-latest-gcc-Release.zip
-                  ${{ github.workspace }}/cuberite/Cuberite-windows-latest-cl-Release.zip
+                  ${{ github.workspace }}/Cuberite-ubuntu-latest-clang-Release.zip
+                  ${{ github.workspace }}/Cuberite-ubuntu-latest-gcc-Release.zip
+                  ${{ github.workspace }}/Cuberite-windows-latest-cl-Release.zip
           prerelease: true
