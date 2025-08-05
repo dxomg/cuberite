@@ -143,7 +143,7 @@ jobs:
           name: Release ${{ steps.extract_branch.outputs.branch }}
           body: Automatically uploaded release by GitHub actions
           files: |
-                  Cuberite-ubuntu-latest-clang-Release
-                  Cuberite-ubuntu-latest-gcc-Release
-                  Cuberite-windows-latest-cl-Release
+                  cuberite/Cuberite-ubuntu-latest-clang-Release.zip
+                  cuberite/Cuberite-ubuntu-latest-gcc-Release.zip
+                  cuberite/Cuberite-windows-latest-cl-Release.zip
           prerelease: true
