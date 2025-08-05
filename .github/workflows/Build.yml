@@ -6,6 +6,7 @@ on: [push, pull_request]
 
 jobs:
   build:
+    permissions: {}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -115,11 +116,32 @@ jobs:
       id: extract_branch
 
     - if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/experimental'
-      name: Upload Binary
-      uses: softprops/action-gh-release@v2
+      name: Upload artifact
+      uses: actions/upload-artifact@v4
       with:
-        tag_name: release-${{ steps.extract_branch.outputs.branch }}
-        name: Release ${{ steps.extract_branch.outputs.branch }}
-        body: Automatically uploaded release by GitHub actions
-        files: Cuberite-${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}.zip
-        prerelease: true
+        name: Cuberite-${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}
+        path: Cuberite-${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}.zip
+  upload_release:
+    permissions:
+      contents: write
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+      - if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/experimental'
+        name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: release-${{ steps.extract_branch.outputs.branch }}
+          name: Release ${{ steps.extract_branch.outputs.branch }}
+          body: Automatically uploaded release by GitHub actions
+          files: |
+                  Cuberite-ubuntu-latest-clang-Release.zip
+                  Cuberite-ubuntu-latest-gcc-Release.zip
+                  Cuberite-windows-latest-cl-Release.zip
+          prerelease: true
