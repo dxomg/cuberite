@@ -1,10 +1,6 @@
 name: Style Check
-
-on:
-  push:
-    branches: [ "NewPaletteSystem", "master" ]
-  pull_request:
-    branches: [ "NewPaletteSystem", "master" ]
+permissions: {}
+on: [push, pull_request]
 
 jobs:
   build:
