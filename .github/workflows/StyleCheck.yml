@@ -1,6 +1,10 @@
 name: Style Check
 permissions: {}
-on: [push, pull_request]
+on:
+  push:
+    tags-ignore:
+      - release-*
+  pull_request: {}
 
 jobs:
   build:

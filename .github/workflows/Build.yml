@@ -2,7 +2,11 @@
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    tags-ignore:
+      - release-*
+  pull_request: {}
 
 jobs:
   build:
@@ -149,3 +153,8 @@ jobs:
                   ${{ github.workspace }}/Cuberite-ubuntu-latest-gcc-Release.zip
                   ${{ github.workspace }}/Cuberite-windows-latest-cl-Release.zip
           prerelease: true
+      - if: ${{ success() }}
+        name: Fix tag
+        run: |
+              git tag -f release-${{ steps.extract_branch.outputs.branch }}
+              git push origin release-${{ steps.extract_branch.outputs.branch }} --force
