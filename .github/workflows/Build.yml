@@ -133,6 +133,7 @@ jobs:
         id: extract_branch
       - name: Download Artifacts
         uses: actions/download-artifact@v4
+        merge-multiple: true
       - if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/experimental'
         name: Create GitHub Release
         uses: softprops/action-gh-release@v2
