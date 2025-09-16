@@ -3,7 +3,7 @@
 set -e
 
 # This script cross-compiles cuberite for the android platform. It uses
-# the following enviroment variables
+# the following environment variables
 #   CMAKE: Should be the path to a cmake executable of version 3.12.4+
 #   NDK: Should be the path to the android ndk root
 #   (optional) TYPE: either Release or Debug, sets the build type
@@ -25,6 +25,13 @@ if [ "$1" == "clean" ]; then
 fi
 
 if [ -z "$CMAKE" -o -z "$NDK" ]; then
+  if [ -z "$CMAKE" ]; then
+    echo "ERROR: CMAKE isn't set";
+  fi
+  if [ -z "$NDK" ]; then
+    echo "ERROR: NDK isn't set";
+  fi
+  echo "ERROR: CMAKE or NDK aren't set";
 	usage;
 fi
 
@@ -89,6 +96,7 @@ case "$1" in
 	;;
 
 	*)
+	  echo "ERROR: invalid argument passed";
 		usage;
 	;;
 esac
