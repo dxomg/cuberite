@@ -1,89 +1,68 @@
-name: Cross-Compile Cuberite for x86 i586 (GCC, glibc)
+name: Build Cuberite for x86 i686 (Alpine)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-i586:
-    name: x86 i586 Static Build
-    runs-on: ubuntu-22.04
+  build-i686:
+    name: i686 Static Build (Alpine)
+    runs-on: ubuntu-latest
+
+    container:
+      image: alpine:3.20
 
     steps:
-      - name: Checkout Cuberite with submodules
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
       - name: Install dependencies
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
+          apk add --no-cache \
+            build-base \
             cmake \
-            ninja-build \
+            ninja \
             git \
             curl \
             wget \
             file \
             zip \
             python3 \
-            gawk \
-            bison \
-            flex \
-            texinfo \
-            help2man \
-            libtool \
-            automake \
-            autoconf \
-            gcc-multilib \
-            g++-multilib \
-            upx \
-            lua5.3
+            lua5.3 \
+            linux-headers \
+            upx
 
-      - name: Symlink lua5.3 to lua if needed
+      - name: Checkout Cuberite with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure Cuberite for i686
         run: |
-          if ! command -v lua >/dev/null && command -v lua5.3 >/dev/null; then
-            sudo ln -s "$(command -v lua5.3)" /usr/local/bin/lua
-          fi
-
-      - name: Configure Cuberite for i586 static build
-        run: |
-          export CC=gcc
-          export CXX=g++
-
           mkdir build
           cd build
 
           cmake .. -G Ninja \
-            -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=i586 \
-            -DCMAKE_C_COMPILER=${CC} \
-            -DCMAKE_CXX_COMPILER=${CXX} \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_EXE_LINKER_FLAGS="-static" \
-            -DCMAKE_C_FLAGS="-m32 -static -static-libgcc -march=i586 -mtune=i586" \
-            -DCMAKE_CXX_FLAGS="-m32 -static -static-libgcc -static-libstdc++ -march=i586 -mtune=i586"
+            -DCMAKE_SYSTEM_PROCESSOR=i686 \
+            -DCMAKE_C_FLAGS="-m32 -march=i686 -mtune=i686 -static" \
+            -DCMAKE_CXX_FLAGS="-m32 -march=i686 -mtune=i686 -static"
 
-      - name: Build Cuberite for i586
+      - name: Build Cuberite
         run: |
-          cmake --build build --config Release -j$(nproc)
+          cmake --build build -j$(nproc)
 
       - name: List built contents
         run: |
-          ls -lh build/Server || echo "No contents found in build/Server"
+          ls -lh build/Server || echo "No contents found"
 
-      - name: Strip and compress the Cuberite binary
+      - name: Strip and compress
         run: |
           BIN="build/Server/Cuberite"
           if [ -f "$BIN" ]; then
             file "$BIN"
-            strip "$BIN" || echo "Skipping strip"
-            upx --best --lzma "$BIN" || echo "UPX compression skipped"
+            strip "$BIN"
+            upx --best --lzma "$BIN" || echo "UPX skipped"
           fi
 
-      - name: Upload full Cuberite Server folder
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cuberite-i586-static-server
+          name: cuberite-i686-alpine-static
           path: build/Server/
