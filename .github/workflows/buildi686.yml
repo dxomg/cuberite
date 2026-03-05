@@ -5,11 +5,11 @@ on:
 
 jobs:
   build-i686:
-    name: i686 Static Build (Alpine)
+    name: i686 Static Build
     runs-on: ubuntu-latest
 
     container:
-      image: alpine:3.20
+      image: i386/alpine:3.20
 
     steps:
       - name: Install dependencies
@@ -33,7 +33,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Configure Cuberite for i686
+      - name: Configure Cuberite
         run: |
           mkdir build
           cd build
@@ -41,16 +41,13 @@ jobs:
           cmake .. -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_SYSTEM_PROCESSOR=i686 \
-            -DCMAKE_C_FLAGS="-m32 -march=i686 -mtune=i686 -static" \
-            -DCMAKE_CXX_FLAGS="-m32 -march=i686 -mtune=i686 -static"
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_C_FLAGS="-march=i686 -mtune=i686 -static" \
+            -DCMAKE_CXX_FLAGS="-march=i686 -mtune=i686 -static"
 
-      - name: Build Cuberite
+      - name: Build
         run: |
           cmake --build build -j$(nproc)
-
-      - name: List built contents
-        run: |
-          ls -lh build/Server || echo "No contents found"
 
       - name: Strip and compress
         run: |
@@ -58,7 +55,7 @@ jobs:
           if [ -f "$BIN" ]; then
             file "$BIN"
             strip "$BIN"
-            upx --best --lzma "$BIN" || echo "UPX skipped"
+            upx --best --lzma "$BIN" || true
           fi
 
       - name: Upload artifact
