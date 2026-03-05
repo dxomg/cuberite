@@ -1,11 +1,11 @@
-name: Cross-Compile Cuberite for x86 i686 (GCC, glibc)
+name: Cross-Compile Cuberite for x86 i586 (GCC, glibc)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-i686:
-    name: x86 i686 Static Build
+  build-i586:
+    name: x86 i586 Static Build
     runs-on: ubuntu-22.04
 
     steps:
@@ -47,7 +47,7 @@ jobs:
             sudo ln -s "$(command -v lua5.3)" /usr/local/bin/lua
           fi
 
-      - name: Configure Cuberite for i686 static build
+      - name: Configure Cuberite for i586 static build
         run: |
           export CC=gcc
           export CXX=g++
@@ -57,15 +57,15 @@ jobs:
 
           cmake .. -G Ninja \
             -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=i686 \
+            -DCMAKE_SYSTEM_PROCESSOR=i586 \
             -DCMAKE_C_COMPILER=${CC} \
             -DCMAKE_CXX_COMPILER=${CXX} \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
-            -DCMAKE_C_FLAGS="-m32 -static -static-libgcc -march=i686" \
-            -DCMAKE_CXX_FLAGS="-m32 -static -static-libgcc -static-libstdc++ -march=i686"
+            -DCMAKE_C_FLAGS="-m32 -static -static-libgcc -march=i586 -mtune=i586" \
+            -DCMAKE_CXX_FLAGS="-m32 -static -static-libgcc -static-libstdc++ -march=i586 -mtune=i586"
 
-      - name: Build Cuberite for i686
+      - name: Build Cuberite for i586
         run: |
           cmake --build build --config Release -j$(nproc)
 
@@ -85,5 +85,5 @@ jobs:
       - name: Upload full Cuberite Server folder
         uses: actions/upload-artifact@v4
         with:
-          name: cuberite-i686-static-server
+          name: cuberite-i586-static-server
           path: build/Server/
